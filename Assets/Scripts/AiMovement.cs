@@ -7,15 +7,14 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-using System.Net.Mail;
-using System.Net.Mime;
-using System.Runtime.Remoting.Contexts;
+
+using System;
 using UnityEngine;
 
 public class AiMovement : MonoBehaviour
 {
     public float Speed;
-    public float Health = 10.0f;
+    public float Health = 100.0f;
 
     public GUIText StateText;
     public TextMesh AiStateText;
@@ -28,6 +27,7 @@ public class AiMovement : MonoBehaviour
     [SerializeField] private float _distance;
 
     public Transform Player;
+    private Transform _agent;
 
     private enum State
     {
@@ -37,48 +37,57 @@ public class AiMovement : MonoBehaviour
     }
 
     //private State aiState = State.Idle;
-    Context _context = new Context();
+    
 
     void Start()
     {
-        
+        _agent = this.transform;
         Player = GameObject.FindGameObjectWithTag("Player").transform;
     }
 
     void Update()
     {
-        _distance = Vector3.Distance(transform.position, Player.position);
+        _distance = CheckDistance(_agent, Player);
+
         AiAgressiveState = new Aggressive();
+		AiNormalstate = new Normal();
 
-        AgressiveAI();
+        if (Health > 50)
+        {
+            AgressiveAI();
+        }
+        else if (Health <= 50)
+        {
+            NormalAI();
+        }
+        else
+        {
+            AgressiveAI();
+        }
+        
     }
-
-    //private void Move()
-    //{
-    //    if (aiState == State.Pursue || aiState == State.Attack)
-    //    {
-    //        transform.LookAt(Player.transform);
-    //        transform.Translate(Vector3.forward * Speed * Time.deltaTime);
-    //    }
-    //}
 
     void UpdateState(string stateText)
     {
         AiStateText.text = stateText;
     }
 
-    void AgressiveAI()
+    float CheckDistance(Transform agent, Transform player)
+    {
+        return Vector3.Distance(agent.position, player.position);
+    }
+
+    public void AgressiveAI()
     {
         if (_distance <= _attackRange)
         {
-            //aiState = State.Attack;
             UpdateState(global::State._state);
-            AiAgressiveState.Attack(this.transform, Player);
+            AiAgressiveState.Attack(_agent, Player);
         }
 
         else if (_distance <= _pursueRange && _distance > _attackRange)
         {
-            AiAgressiveState.Pursuit(this.transform, Player);
+            AiAgressiveState.Pursuit(_agent, Player);
             UpdateState(global::State._state);
         }
 
@@ -87,5 +96,37 @@ public class AiMovement : MonoBehaviour
             AiAgressiveState.Idle();
             UpdateState(global::State._state);
         }
+    }
+
+    void NormalAI()
+    {
+		if(null != _agent && null != Player)
+		{
+	        if (_distance <= _attackRange)
+	        {
+	            UpdateState(global::State._state);
+	            AiNormalstate.Attack(_agent, Player);
+	        }
+	        else if (_distance <= _pursueRange)
+	        {
+				Debug.Log(global::State._state);
+				Debug.Log(_agent);
+				Debug.Log (Player);
+	            UpdateState(global::State._state);
+	            if (_agent != null) AiNormalstate.Pursuit(_agent, Player);
+	        }
+
+	        else if (_distance > _pursueRange)
+	        {
+	            UpdateState(global::State._state);
+	            //AiNormalstate.Seeking(_agent);
+	        }
+	        else
+	        {
+	            UpdateState(global::State._state);
+	            AiNormalstate.Idle();
+	        }
+		}
+		else print("Could not find refference to _agent or Player. ");
     }
 }
