@@ -98,7 +98,7 @@ public class AiMovement : MonoBehaviour
         }
     }
 
-    void NormalAI()
+    public void NormalAI()
     {
 		if(null != _agent && null != Player)
 		{
